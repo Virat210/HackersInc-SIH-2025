@@ -6,10 +6,19 @@ function App() {
   const [crop, setCrop] = useState(null);
   const [season, setSeason] = useState(null);
   const [state, setState] = useState(null);
+  const [district, setDistrict] = useState(null);
   const [language, setLanguage] = useState({ value: "en", label: "English" });
   const [result, setResult] = useState("");
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [visible, setVisible] = useState(false);
+
+  // Dummy district data (replace with real mapping later)
+  const districtData = {
+    "Uttar Pradesh": ["Lucknow", "Varanasi", "Kanpur", "Agra"],
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
+    "Tamil Nadu": ["Chennai", "Madurai", "Coimbatore"],
+    "Bihar": ["Patna", "Gaya", "Bhagalpur"]
+  };
 
   // Custom cursor
   useEffect(() => {
@@ -52,11 +61,35 @@ function App() {
     { value: "pa", label: "Punjabi" }, { value: "or", label: "Odia" }
   ];
 
-  const handleSubmit = (e) => {
+  // ✅ Submit function with backend call
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (crop && season && state) {
-      setResult(`🌾 Predicted yield for **${crop.value}** in **${season.value}** season at 📍 ${state.value} `);
-    } else setResult(translations[language.value].warning);
+    if (crop && season && state && district) {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            State_Name: state.value,
+            District_Name: district.value,
+            Season: season.value,
+            Crop: crop.value
+          })
+        });
+        const data = await response.json();
+        if (data.Predicted_Production) {
+          setResult(
+            `🌾 Predicted yield for **${crop.value}** in **${season.value}** season at 📍 ${district.value}, ${state.value} is **${data.Predicted_Production.toFixed(2)} units**`
+          );
+        } else {
+          setResult("⚠️ Error: " + data.error);
+        }
+      } catch (err) {
+        setResult("⚠️ Server not reachable");
+      }
+    } else {
+      setResult(translations[language.value].warning);
+    }
   };
 
   return (
@@ -64,7 +97,13 @@ function App() {
       <div className="cursor" style={{ left: mousePos.x, top: mousePos.y }}></div>
 
       <div className="language-topbar">
-        <Select options={languages} value={language} onChange={setLanguage} placeholder={translations[language.value].language} isSearchable={false} />
+        <Select 
+          options={languages}
+          value={language}
+          onChange={setLanguage}
+          placeholder={translations[language.value].language}
+          isSearchable={false}
+        />
       </div>
 
       <video autoPlay loop muted className="background-video">
@@ -81,7 +120,20 @@ function App() {
           <Select options={seasons} value={season} onChange={setSeason} placeholder={translations[language.value].selectSeason + "..."} isSearchable />
 
           <label>{translations[language.value].selectState}</label>
-          <Select options={statesOfIndia} value={state} onChange={setState} placeholder={translations[language.value].selectState + "..."} isSearchable />
+          <Select options={statesOfIndia} value={state} onChange={s => { setState(s); setDistrict(null); }} placeholder={translations[language.value].selectState + "..."} isSearchable />
+
+          {state && (
+            <>
+              <label>{translations[language.value].selectDistrict}</label>
+              <Select 
+                options={(districtData[state.value] || []).map(d => ({ value: d, label: d }))}
+                value={district}
+                onChange={setDistrict}
+                placeholder={translations[language.value].selectDistrict + "..."}
+                isSearchable
+              />
+            </>
+          )}
 
           <button type="submit">{translations[language.value].predict}</button>
         </form>
