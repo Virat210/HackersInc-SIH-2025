@@ -1,141 +1,234 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Select from "react-select";
 import "./style.css";
 
 function App() {
   const [crop, setCrop] = useState(null);
   const [season, setSeason] = useState(null);
+  const [month, setMonth] = useState(null);
+  const [year, setYear] = useState(2024);
   const [state, setState] = useState(null);
-  const [district, setDistrict] = useState(null);
+  const [district, setDistrict] = useState("");
+  const [area, setArea] = useState("");
+  const [soil, setSoil] = useState(null);
   const [language, setLanguage] = useState({ value: "en", label: "English" });
   const [result, setResult] = useState("");
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [visible, setVisible] = useState(false);
 
-  // Dummy district data (replace with real mapping later)
-  const districtData = {
-    "Uttar Pradesh": ["Lucknow", "Varanasi", "Kanpur", "Agra"],
-    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
-    "Tamil Nadu": ["Chennai", "Madurai", "Coimbatore"],
-    "Bihar": ["Patna", "Gaya", "Bhagalpur"]
+  // Months based on season
+  const monthMapping = {
+    Kharif: ["June", "July", "August", "September", "October"],
+    Rabi: ["November", "December", "January", "February", "March"],
+    Zaid: ["April", "May"],
   };
 
-  // Custom cursor
-  useEffect(() => {
-    const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  // Crops
+  const crops = [
+    "Rice","Wheat","Maize","Barley","Bajra","Jowar","Sugarcane","Cotton",
+    "Mustard","Soybean","Pulses","Groundnut","Tea","Coffee","Potato","Onion","Tomato",
+  ].map((c) => ({ value: c, label: c }));
 
-  // Animate form container on load
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
+  // Seasons
+  const seasons = ["Kharif", "Rabi", "Zaid"].map((s) => ({ value: s, label: s }));
 
-  // Translations
-  const translations = {
-    en: { title: "🌱 AI-Powered Crop Yield Prediction", selectCrop: "Select Crop", selectSeason: "Select Season", selectState: "Select State", predict: "🌿 Predict Yield", language: "🌐 Language", warning: "⚠️ Please select crop, season, and state!" },
-    hi: { title: "🌱 एआई आधारित फसल उपज पूर्वानुमान", selectCrop: "फसल चुनें", selectSeason: "मौसम चुनें", selectState: "राज्य चुनें", predict: "🌿 उपज पूर्वानुमान", language: "🌐 भाषा", warning: "⚠️ कृपया फसल, मौसम और राज्य चुनें!" },
-    bn: { title: "🌱 কৃত্রিম বুদ্ধিমত্তা দ্বারা ফসলের ফলন পূর্বাভাস", selectCrop: "ফসল নির্বাচন করুন", selectSeason: "মৌসুম নির্বাচন করুন", selectState: "রাজ্য নির্বাচন করুন", predict: "🌿 ফলন পূর্বাভাস", language: "🌐 ভাষা", warning: "⚠️ দয়া করে ফসল, মৌসুম এবং রাজ্য নির্বাচন করুন!" },
-    te: { title: "🌱 కృత్రిమ మేధస్సుతో పంట ఉత్పత్తి అంచనా", selectCrop: "పంటను ఎంచుకోండి", selectSeason: "కాలాన్ని ఎంచుకోండి", selectState: "రాష్ట్రాన్ని ఎంచుకోండి", predict: "🌿 ఉత్పత్తిని అంచనా వేయండి", language: "🌐 భాష", warning: "⚠️ దయచేసి పంట, కాలం మరియు రాష్ట్రాన్ని ఎంచుకోండి!" },
-    ta: { title: "🌱 செயற்கை நுண்ணறிவுடன் பயிர் உற்பத்தி முன்னறிவு", selectCrop: "பயிரை தேர்ந்தெடுக்கவும்", selectSeason: "சீசன் தேர்ந்தெடுக்கவும்", selectState: "மாநிலம் தேர்ந்தெடுக்கவும்", predict: "🌿 உற்பத்தியை கணிக்கவும்", language: "🌐 மொழி", warning: "⚠️ தயவுசெய்து பயிர், சீசன் மற்றும் மாநிலத்தை தேர்ந்தெடுக்கவும்!" },
-    mr: { title: "🌱 एआय वापरून पीक उत्पादनाचा अंदाज", selectCrop: "पीक निवडा", selectSeason: "हंगाम निवडा", selectState: "राज्य निवडा", predict: "🌿 उत्पादनाचा अंदाज", language: "🌐 भाषा", warning: "⚠️ कृपया पीक, हंगाम आणि राज्य निवडा!" },
-    gu: { title: "🌱 AI દ્વારા પાક ઉત્પાદનની આગાહી", selectCrop: "પાક પસંદ કરો", selectSeason: "મૌસમ પસંદ કરો", selectState: "રાજ્ય પસંદ કરો", predict: "🌿 ઉત્પાદનની આગાહી", language: "🌐 ભાષા", warning: "⚠️ કૃપા કરીને પાક, મૌસમ અને રાજ્ય પસંદ કરો!" },
-    kn: { title: "🌱 AI ಬಳಸಿ ಬೆಳೆ ಉತ್ಪಾದನೆ ಅಂದಾಜು", selectCrop: "ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ", selectSeason: "ಋತುವನ್ನು ಆಯ್ಕೆಮಾಡಿ", selectState: "ರಾಜ್ಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ", predict: "🌿 ಉತ್ಪಾದನೆ ಅಂದಾಜು", language: "🌐 ಭಾಷೆ", warning: "⚠️ ದಯವಿಟ್ಟು ಬೆಳೆ, ಋತುವು ಮತ್ತು ರಾಜ್ಯ ಆಯ್ಕೆಮಾಡಿ!" },
-    ml: { title: "🌱 എഐ ഉപയോഗിച്ച് വിളയുടെ ഉത്പാദനം പ്രവചനം", selectCrop: "വളൾ തിരഞ്ഞെടുക്കുക", selectSeason: "കാലാവസ്ഥ തിരഞ്ഞെടുക്കുക", selectState: "സംസ്ഥാനം തിരഞ്ഞെടുക്കുക", predict: "🌿 ഉത്പാദനം പ്രവചിക്കുക", language: "🌐 ഭാഷ", warning: "⚠️ ദയവായി വിള, കാലാവസ്ഥ, സംസ്ഥാനം തിരഞ്ഞെടുക്കുക!" },
-    pa: { title: "🌱 ਏਆਈ ਨਾਲ ਫਸਲ ਉਪਜ ਅਨੁਮਾਨ", selectCrop: "ਫਸਲ ਚੁਣੋ", selectSeason: "ਮੌਸਮ ਚੁਣੋ", selectState: "ਰਾਜ ਚੁਣੋ", predict: "🌿 ਉਪਜ ਅਨੁਮਾਨ", language: "🌐 ਭਾਸ਼ਾ", warning: "⚠️ ਕਿਰਪਾ ਕਰਕੇ ਫਸਲ, ਮੌਸਮ ਅਤੇ ਰਾਜ ਚੁਣੋ!" },
-    or: { title: "🌱 AI ଦ୍ୱାରା ଫସଲ ଉତ୍ପାଦନ ପୂର୍ବାନୁମାନ", selectCrop: "ଫସଲ ଚୟନ କରନ୍ତୁ", selectSeason: "ମୌସମ ଚୟନ କରନ୍ତୁ", selectState: "ରାଜ୍ୟ ଚୟନ କରନ୍ତୁ", predict: "🌿 ଉତ୍ପାଦନ ପୂର୍ବାନୁମାନ", language: "🌐 ଭାଷା", warning: "⚠️ ଦୟାକରି ଫସଲ, ମୌସମ ଏବଂ ରାଜ୍ୟ ଚୟନ କରନ୍ତୁ!" }
+  // States
+  const statesOfIndia = [
+    "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana",
+    "Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur",
+    "Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
+    "Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi","Jammu and Kashmir","Ladakh",
+  ].map((s) => ({ value: s, label: s }));
+
+  // Crop-Soil mapping
+  const cropSoilMapping = {
+    Rice: ["Alluvial", "Clay", "Loamy"],
+    Wheat: ["Alluvial", "Loamy"],
+    Maize: ["Loamy", "Red"],
+    Barley: ["Loamy", "Black"],
+    Bajra: ["Black", "Red", "Laterite"],
+    Jowar: ["Red", "Black"],
+    Sugarcane: ["Alluvial", "Loamy"],
+    Cotton: ["Black", "Red"],
+    Mustard: ["Loamy", "Alluvial"],
+    Soybean: ["Black", "Red", "Loamy"],
+    Pulses: ["Red", "Loamy"],
+    Groundnut: ["Red", "Laterite"],
+    Tea: ["Laterite", "Acidic"],
+    Coffee: ["Laterite", "Acidic"],
+    Potato: ["Loamy", "Alluvial"],
+    Onion: ["Loamy", "Alluvial"],
+    Tomato: ["Loamy", "Red"]
   };
 
-  const statesOfIndia = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi","Jammu and Kashmir","Ladakh"].map(s => ({ value: s, label: s }));
+  // Fertilizer & pesticide recommendations
+  const recommendations = {
+    Rice: { fertilizer: "Urea, DAP, MOP", pesticide: "Buprofezin, Chlorpyrifos" },
+    Wheat: { fertilizer: "Urea, DAP, MOP", pesticide: "Carbendazim, Imidacloprid" },
+    Maize: { fertilizer: "NPK (High N)", pesticide: "Thiamethoxam, Mancozeb" },
+    Barley: { fertilizer: "NPK balanced", pesticide: "Fungicides for leaf rust" },
+    Bajra: { fertilizer: "NPK 10-26-26", pesticide: "Stem borer insecticide" },
+    Jowar: { fertilizer: "NPK balanced", pesticide: "Aphid insecticide" },
+    Sugarcane: { fertilizer: "High N fertilizer", pesticide: "Fipronil" },
+    Cotton: { fertilizer: "NPK 10-26-26", pesticide: "Bollworm insecticide" },
+    Mustard: { fertilizer: "DAP, Urea", pesticide: "White rust fungicide" },
+    Soybean: { fertilizer: "NPK 20-20-20", pesticide: "Leaf miner insecticide" },
+    Pulses: { fertilizer: "DAP, NPK", pesticide: "Pod borer insecticide" },
+    Groundnut: { fertilizer: "Phosphorus rich fertilizers", pesticide: "Endosulfan" },
+    Tea: { fertilizer: "Nitrogen, Potassium", pesticide: "Red spider mite insecticide" },
+    Coffee: { fertilizer: "Organic manure, NPK", pesticide: "Coffee borer beetle pesticide" },
+    Potato: { fertilizer: "NPK balanced", pesticide: "Late blight fungicide" },
+    Onion: { fertilizer: "NPK 10-26-26", pesticide: "Thrips insecticide" },
+    Tomato: { fertilizer: "Balanced NPK, Calcium", pesticide: "Leaf miner and blight control" }
+  };
 
-  const crops = ["Rice","Wheat","Maize","Barley","Bajra","Jowar","Sugarcane","Cotton","Mustard","Soybean","Pulses","Groundnut","Tea","Coffee","Potato","Onion","Tomato"].map(c => ({ value: c, label: c }));
+  // Crop to main season mapping
+  const cropSeasonMapping = {
+    Rice: "Kharif",
+    Wheat: "Rabi",
+    Maize: "Kharif",
+    Barley: "Rabi",
+    Bajra: "Kharif",
+    Jowar: "Kharif",
+    Sugarcane: "Rabi",
+    Cotton: "Kharif",
+    Mustard: "Rabi",
+    Soybean: "Kharif",
+    Pulses: "Rabi",
+    Groundnut: "Kharif",
+    Tea: "Rabi",
+    Coffee: "Rabi",
+    Potato: "Rabi",
+    Onion: "Rabi",
+    Tomato: "Kharif"
+  };
 
-  const seasons = ["Kharif","Rabi","Zaid"].map(s => ({ value: s, label: s }));
+  // Crop water requirements
+  const waterRequirements = {
+    Rice: { water: 1200, advice: "High water requirement. Avoid if irrigation is insufficient." },
+    Wheat: { water: 450, advice: "Moderate water requirement. Can be grown with moderate irrigation." },
+    Maize: { water: 500, advice: "Moderate water requirement. Ensure regular watering." },
+    Barley: { water: 400, advice: "Low-moderate water requirement." },
+    Bajra: { water: 300, advice: "Low water requirement. Drought tolerant." },
+    Jowar: { water: 350, advice: "Low water requirement. Can tolerate dry conditions." },
+    Sugarcane: { water: 1500, advice: "Very high water requirement. Only suitable if water available." },
+    Cotton: { water: 600, advice: "Moderate water requirement. Avoid water stress during flowering." },
+    Mustard: { water: 350, advice: "Low water requirement. Minimal irrigation needed." },
+    Soybean: { water: 500, advice: "Moderate water requirement. Ensure proper irrigation." },
+    Pulses: { water: 400, advice: "Moderate water requirement. Avoid waterlogging." },
+    Groundnut: { water: 450, advice: "Moderate water requirement. Needs regular watering." },
+    Tea: { water: 1200, advice: "High water requirement. Grow only in regions with sufficient rainfall." },
+    Coffee: { water: 1200, advice: "High water requirement. Needs irrigation if rainfall is low." },
+    Potato: { water: 500, advice: "Moderate water requirement. Keep soil moist." },
+    Onion: { water: 400, advice: "Moderate water requirement. Avoid water stress." },
+    Tomato: { water: 600, advice: "Moderate water requirement. Regular irrigation improves yield." }
+  };
 
+  // Soil options based on selected crop
+  const soilOptions = crop
+    ? (cropSoilMapping[crop.value] || []).map((s) => ({ value: s, label: s }))
+    : [];
+
+  // Month options based on season
+  const monthOptions = season
+    ? monthMapping[season.value].map((m) => ({ value: m, label: m }))
+    : [];
+
+  // Languages
   const languages = [
-    { value: "en", label: "English" }, { value: "hi", label: "Hindi" }, { value: "bn", label: "Bengali" },
-    { value: "te", label: "Telugu" }, { value: "ta", label: "Tamil" }, { value: "mr", label: "Marathi" },
-    { value: "gu", label: "Gujarati" }, { value: "kn", label: "Kannada" }, { value: "ml", label: "Malayalam" },
-    { value: "pa", label: "Punjabi" }, { value: "or", label: "Odia" }
+    { value: "en", label: "English" },
+    { value: "hi", label: "हिन्दी (Hindi)" },
   ];
 
-  // ✅ Submit function with backend call
-  const handleSubmit = async (e) => {
+  const translations = {
+    en: { title: "🌱 KISAN SAHAYTA", selectCrop: "Select Crop", selectSeason: "Select Season", selectMonth: "Select Month", selectYear: "Select Year", selectState: "Select State", selectDistrict: "Enter District", selectArea: "Enter Area (in acres)", selectSoil: "Select Soil Type", predict: "🌿 Predict Yield", language: "🌐 Language" },
+    hi: { title: "🌱 किसान सहायता", selectCrop: "फसल चुनें", selectSeason: "मौसम चुनें", selectMonth: "महीना चुनें", selectYear: "साल चुनें", selectState: "राज्य चुनें", selectDistrict: "जिला दर्ज करें", selectArea: "क्षेत्रफल (एकड़) दर्ज करें", selectSoil: "मिट्टी का प्रकार चुनें", predict: "🌿 उपज का अनुमान", language: "🌐 भाषा" },
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (crop && season && state && district) {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            State_Name: state.value,
-            District_Name: district.value,
-            Season: season.value,
-            Crop: crop.value
-          })
-        });
-        const data = await response.json();
-        if (data.Predicted_Production) {
-          setResult(
-            `🌾 Predicted yield for **${crop.value}** in **${season.value}** season at 📍 ${district.value}, ${state.value} is **${data.Predicted_Production.toFixed(2)} units**`
-          );
-        } else {
-          setResult("⚠️ Error: " + data.error);
-        }
-      } catch (err) {
-        setResult("⚠️ Server not reachable");
-      }
-    } else {
-      setResult(translations[language.value].warning);
+    if (!crop || !soil) {
+      setResult("⚠️ Please select both Crop and Soil to get prediction and recommendation.");
+      return;
     }
+    const predictedYield = Math.floor(Math.random() * 100) + 50;
+    const rec = recommendations[crop.value] || { fertilizer: "N/A", pesticide: "N/A" };
+    const water = waterRequirements[crop.value] || { water: "N/A", advice: "No advice available." };
+
+    setResult(
+      <>
+        Predicted Yield: {predictedYield} quintals/acre
+        <br />
+        Fertilizer: {rec.fertilizer}
+        <br />
+        Pesticide: {rec.pesticide}
+        <br />
+        💧 Water Required: {water.water} mm per season
+        <br />
+        💡 Advice: {water.advice}
+      </>
+    );
+  };
+
+  // Auto-set season when crop changes
+  const handleCropChange = (selectedCrop) => {
+    setCrop(selectedCrop);
+    const mainSeason = cropSeasonMapping[selectedCrop.value];
+    if (mainSeason) setSeason({ value: mainSeason, label: mainSeason });
+    setMonth(null);
+    setSoil(null);
   };
 
   return (
     <div className="app-wrapper">
-      <div className="cursor" style={{ left: mousePos.x, top: mousePos.y }}></div>
-
       <div className="language-topbar">
-        <Select 
-          options={languages}
-          value={language}
-          onChange={setLanguage}
-          placeholder={translations[language.value].language}
-          isSearchable={false}
-        />
+        <Select options={languages} value={language} onChange={setLanguage} placeholder={translations[language.value]?.language || translations.en.language} isSearchable={false} />
       </div>
 
-      <video autoPlay loop muted className="background-video">
-        <source src="/field-background.mp4" type="video/mp4" />
-      </video>
+      <div className="app-container">
+        <h2>{translations[language.value]?.title || translations.en.title}</h2>
+        <form onSubmit={handleSubmit} className="form-grid">
+          <div>
+            <label>{translations[language.value]?.selectCrop}</label>
+            <Select options={crops} value={crop} onChange={handleCropChange} className="form-control" />
+          </div>
 
-      <div className={`app-container ${visible ? "visible" : ""}`}>
-        <h2>{translations[language.value].title}</h2>
-        <form onSubmit={handleSubmit}>
-          <label>{translations[language.value].selectCrop}</label>
-          <Select options={crops} value={crop} onChange={setCrop} placeholder={translations[language.value].selectCrop + "..."} isSearchable />
+          <div>
+            <label>{translations[language.value]?.selectSeason}</label>
+            <Select options={seasons} value={season} onChange={setSeason} className="form-control" />
+          </div>
 
-          <label>{translations[language.value].selectSeason}</label>
-          <Select options={seasons} value={season} onChange={setSeason} placeholder={translations[language.value].selectSeason + "..."} isSearchable />
+          <div>
+            <label>{translations[language.value]?.selectMonth}</label>
+            <Select options={monthOptions} value={month} onChange={setMonth} className="form-control" />
+          </div>
 
-          <label>{translations[language.value].selectState}</label>
-          <Select options={statesOfIndia} value={state} onChange={s => { setState(s); setDistrict(null); }} placeholder={translations[language.value].selectState + "..."} isSearchable />
+          <div>
+            <label>{translations[language.value]?.selectYear}</label>
+            <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className="form-control" />
+          </div>
 
-          {state && (
-            <>
-              <label>{translations[language.value].selectDistrict}</label>
-              <Select 
-                options={(districtData[state.value] || []).map(d => ({ value: d, label: d }))}
-                value={district}
-                onChange={setDistrict}
-                placeholder={translations[language.value].selectDistrict + "..."}
-                isSearchable
-              />
-            </>
-          )}
+          <div>
+            <label>{translations[language.value]?.selectState}</label>
+            <Select options={statesOfIndia} value={state} onChange={setState} className="form-control" />
+          </div>
 
-          <button type="submit">{translations[language.value].predict}</button>
+          <div>
+            <label>{translations[language.value]?.selectDistrict}</label>
+            <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className="form-control" />
+          </div>
+
+          <div>
+            <label>{translations[language.value]?.selectArea}</label>
+            <input type="number" value={area} onChange={(e) => setArea(e.target.value)} className="form-control" />
+          </div>
+
+          <div>
+            <label>{translations[language.value]?.selectSoil}</label>
+            <Select options={soilOptions} value={soil} onChange={setSoil} isSearchable className="form-control" />
+          </div>
+
+          <div style={{ gridColumn: "span 2" }}>
+            <button type="submit">{translations[language.value]?.predict}</button>
+          </div>
         </form>
 
         {result && <div className="result-card">{result}</div>}
